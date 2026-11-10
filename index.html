@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>EXIF Extractor</title>
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<style>
+  body { background-color: #08080a; color: #ececf0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; margin: 0; }
+  h1 { font-size: 20px; letter-spacing: 0.1em; text-transform: uppercase; color: #3dff9a; margin-bottom: 20px; border-bottom: 1px solid #24242e; padding-bottom: 10px; }
+  .upload-box { background: #101014; border: 2px dashed #3d9aff; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; margin-bottom: 20px; }
+  .upload-box p { margin: 0; color: #7a7a88; font-size: 14px; }
+  input[type="file"] { display: none; }
+  .result-box { background: #101014; border: 1px solid #24242e; border-radius: 12px; padding: 15px; margin-bottom: 15px; display: none; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #24242e; font-size: 14px; }
+  .row:last-child { border-bottom: none; }
+  .label { color: #7a7a88; font-weight: 600; }
+  .value { color: #fff; text-align: right; max-width: 60%; word-break: break-all; }
+  a { color: #3dff9a; text-decoration: none; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>EXIF Data Extractor</h1>
+
+<label for="fileInput" class="upload-box" id="dropZone">
+  <p><strong>Tap to upload a photo</strong><br><span style="font-size:12px;">Select an image from your library</span></p>
+</label>
+<input type="file" id="fileInput" accept="image/*">
+
+<div class="result-box" id="results">
+  <div class="row"><span class="label">GPS Map</span><span class="value" id="mapLink">-</span></div>
+  <div class="row"><span class="label">Camera Make</span><span class="value" id="make">-</span></div>
+  <div class="row"><span class="label">Camera Model</span><span class="value" id="model">-</span></div>
+  <div class="row"><span class="label">Date Taken</span><span class="value" id="date">-</span></div>
+  <div class="row"><span class="label">Software</span><span class="value" id="software">-</span></div>
+  <div class="row" id="rawRow" style="display:none;"><span class="label">Raw Data</span><span class="value" id="raw" style="font-size:10px; color:#7a7a88;"></span></div>
+</div>
+
+<script>
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    document.getElementById('dropZone').style.display = 'none';
+    const results = document.getElementById('results');
+    results.style.display = 'block';
+
+    EXIF.getData(file, function() {
+      const make = EXIF.getTag(this, "Make") || "Unknown";
+      const model = EXIF.getTag(this, "Model") || "Unknown";
+      const date = EXIF.getTag(this, "DateTimeOriginal") || "Unknown";
+      const software = EXIF.getTag(this, "Software") || "Unknown";
+      
+      document.getElementById('make').innerText = make;
+      document.getElementById('model').innerText = model;
+      document.getElementById('date').innerText = date;
+      document.getElementById('software').innerText = software;
+
+      // Grab GPS
+      const lat = EXIF.getTag(this, "GPSLatitude");
+      const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+      const lon = EXIF.getTag(this, "GPSLongitude");
+      const lonRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
+
+      if (lat && lon) {
+        const latDec = (lat[0] + lat[1]/60 + lat[2]/3600) * (latRef === "N" ? 1 : -1);
+        const lonDec = (lon[0] + lon[1]/60 + lon[2]/3600) * (lonRef === "W" ? -1 : 1);
+        document.getElementById('mapLink').innerHTML = `<a href="https://www.google.com/maps?q=${latDec},${lonDec}" target="_blank">View on Google Maps</a>`;
+      } else {
+        document.getElementById('mapLink').innerText = "No GPS Data Found";
+      }
+    });
+  });
+</script>
+</body>
+</html>
